@@ -20,9 +20,12 @@ from __future__ import annotations
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, status
+from sqlalchemy import select
 
+from airflow.api_fastapi.common.db.common import SessionDep
 from airflow.api_fastapi.execution_api.datamodels.variable import (
+    VariableCollectionResponse,
     VariablePostBody,
     VariableResponse,
 )
@@ -58,6 +61,8 @@ router = APIRouter(
     responses={status.HTTP_404_NOT_FOUND: {"description": "Variable not found"}},
     dependencies=[Depends(has_variable_access)],
 )
+
+list_router = APIRouter()
 
 log = logging.getLogger(__name__)
 
@@ -120,3 +125,28 @@ def delete_variable(
 ):
     """Delete an Airflow Variable."""
     Variable.delete(key=variable_key, team_name=team_name)
+
+
+@list_router.get(
+    "",
+    responses={
+        status.HTTP_401_UNAUTHORIZED: {"description": "Unauthorized"},
+    },
+)
+def get_variables(
+    session: SessionDep,
+    team_name: Annotated[str | None, Depends(get_team_name_dep)] = None,
+    prefix: Annotated[str | None, Query()] = None,
+) -> VariableCollectionResponse:
+    """Get Airflow Variables, optionally filtered by key prefix."""
+    stmt = select(Variable)
+    if prefix is not None:
+        stmt = stmt.where(Variable.key.startswith(prefix))
+    if team_name is not None:
+        stmt = stmt.where(Variable.team_name == team_name)
+
+    variables = session.scalars(stmt).all()
+    return VariableCollectionResponse(
+        variables=[VariableResponse(key=v.key, value=v.val) for v in variables],
+        total_entries=len(variables),
+    )

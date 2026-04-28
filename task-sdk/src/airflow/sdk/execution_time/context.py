@@ -278,6 +278,19 @@ def _get_variable(key: str, deserialize_json: bool) -> Any:
     )
 
 
+def _list_variables(prefix: str | None = None) -> list[Any]:
+    from airflow.sdk.execution_time.comms import GetVariables, VariablesResult
+    from airflow.sdk.execution_time.task_runner import SUPERVISOR_COMMS
+
+    msg = SUPERVISOR_COMMS.send(GetVariables(prefix=prefix))
+    if not isinstance(msg, VariablesResult):
+        return []
+
+    from airflow.sdk.definitions.variable import Variable
+
+    return [Variable(key=v.key, value=v.value) for v in msg.variables]
+
+
 def _set_variable(key: str, value: Any, description: str | None = None, serialize_json: bool = False) -> None:
     # TODO: This should probably be moved to a separate module like `airflow.sdk.execution_time.comms`
     #   or `airflow.sdk.execution_time.variable`

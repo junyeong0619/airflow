@@ -90,6 +90,7 @@ from airflow.sdk.execution_time.comms import (
     GetTaskStates,
     GetTICount,
     GetVariable,
+    GetVariables,
     GetXCom,
     GetXComCount,
     GetXComSequenceItem,
@@ -124,6 +125,7 @@ from airflow.sdk.execution_time.comms import (
 from airflow.sdk.execution_time.request_handlers import (
     handle_get_connection,
     handle_get_variable,
+    handle_get_variables,
     handle_mask_secret,
 )
 
@@ -1421,6 +1423,8 @@ class ActivitySubprocess(WatchedSubprocess):
             resp, dump_opts = handle_get_connection(self.client, msg)
         elif isinstance(msg, GetVariable):
             resp, dump_opts = handle_get_variable(self.client, msg)
+        elif isinstance(msg, GetVariables):
+            resp, dump_opts = handle_get_variables(self.client, msg)
         elif isinstance(msg, GetXCom):
             xcom = self.client.xcoms.get(
                 msg.dag_id, msg.run_id, msg.task_id, msg.key, msg.map_index, msg.include_prior_dates

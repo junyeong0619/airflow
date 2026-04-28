@@ -545,6 +545,12 @@ class VariableResult(VariableResponse):
         return cls(**variable_response.model_dump(exclude_defaults=True), type="VariableResult")
 
 
+class VariablesResult(BaseModel):
+    variables: list[VariableResult]
+    total_entries: int
+    type: Literal["VariablesResult"] = "VariablesResult"
+
+
 class DagRunResult(DagRun):
     type: Literal["DagRunResult"] = "DagRunResult"
 
@@ -728,6 +734,7 @@ ToTask = Annotated[
     | TaskBreadcrumbsResult
     | TaskStatesResult
     | VariableResult
+    | VariablesResult
     | XComCountResponse
     | XComResult
     | XComSequenceIndexResult
@@ -860,6 +867,11 @@ class GetConnection(BaseModel):
 class GetVariable(BaseModel):
     key: str
     type: Literal["GetVariable"] = "GetVariable"
+
+
+class GetVariables(BaseModel):
+    prefix: str | None = None
+    type: Literal["GetVariables"] = "GetVariables"
 
 
 class PutVariable(BaseModel):
@@ -1061,6 +1073,7 @@ ToSupervisor = Annotated[
     | GetTaskBreadcrumbs
     | GetTaskStates
     | GetVariable
+    | GetVariables
     | GetXCom
     | GetXComCount
     | GetXComSequenceItem

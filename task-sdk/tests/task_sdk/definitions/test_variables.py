@@ -25,7 +25,7 @@ import pytest
 
 from airflow.sdk import Variable
 from airflow.sdk.configuration import initialize_secrets_backends
-from airflow.sdk.execution_time.comms import PutVariable, VariableResult
+from airflow.sdk.execution_time.comms import GetVariables, PutVariable, VariableResult, VariablesResult
 from airflow.sdk.execution_time.secrets import DEFAULT_SECRETS_SEARCH_PATH_WORKERS
 
 from tests_common.test_utils.config import conf_vars
@@ -88,6 +88,49 @@ class TestVariables:
                 key=key, value=expected_value, description=description, serialize_json=serialize_json
             ),
         )
+
+
+class TestVariableList:
+    @pytest.mark.parametrize(
+        ("prefix", "variables", "expected_keys"),
+        [
+            pytest.param(
+                None,
+                [
+                    VariableResult(key="prod_db", value="postgres://..."),
+                    VariableResult(key="prod_api", value="secret"),
+                    VariableResult(key="dev_debug", value="true"),
+                ],
+                {"prod_db", "prod_api", "dev_debug"},
+                id="all",
+            ),
+            pytest.param(
+                "prod_",
+                [
+                    VariableResult(key="prod_db", value="postgres://..."),
+                    VariableResult(key="prod_api", value="secret"),
+                ],
+                {"prod_db", "prod_api"},
+                id="with-prefix",
+            ),
+            pytest.param(
+                "nonexistent_",
+                [],
+                set(),
+                id="empty-result",
+            ),
+        ],
+    )
+    def test_list(self, prefix, variables, expected_keys, mock_supervisor_comms):
+        mock_supervisor_comms.send.return_value = VariablesResult(
+            variables=variables,
+            total_entries=len(variables),
+        )
+
+        results = Variable.list(prefix=prefix)
+
+        mock_supervisor_comms.send.assert_called_once_with(msg=GetVariables(prefix=prefix))
+        assert {v.key for v in results} == expected_keys
 
 
 class TestVariableFromSecrets:

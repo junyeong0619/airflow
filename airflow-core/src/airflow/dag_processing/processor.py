@@ -50,6 +50,7 @@ from airflow.sdk.execution_time.comms import (
     GetTaskStates,
     GetTICount,
     GetVariable,
+    GetVariables,
     GetXCom,
     GetXComCount,
     GetXComSequenceItem,
@@ -127,6 +128,7 @@ ToManager = Annotated[
     DagFileParsingResult
     | GetConnection
     | GetVariable
+    | GetVariables
     | PutVariable
     | GetTaskStates
     | GetTICount
@@ -621,6 +623,10 @@ class DagFileProcessorProcess(WatchedSubprocess):
                 dump_opts = {"exclude_unset": True}
             else:
                 resp = var
+        elif isinstance(msg, GetVariables):
+            from airflow.sdk.execution_time.request_handlers import handle_get_variables
+
+            resp, dump_opts = handle_get_variables(self.client, msg)
         elif isinstance(msg, PutVariable):
             self.client.variables.set(msg.key, msg.value, msg.description)
         elif isinstance(msg, DeleteVariable):

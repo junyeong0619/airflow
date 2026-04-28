@@ -27,7 +27,7 @@ from uuid import UUID
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, JsonValue, RootModel
 
-API_VERSION: Final[str] = "2026-04-17"
+API_VERSION: Final[str] = "2026-04-28"
 
 
 class AssetAliasReferenceAssetEventDagRun(BaseModel):
@@ -578,6 +578,18 @@ class TITerminalStatePayload(BaseModel):
     state: TerminalStateNonSuccess
     end_date: Annotated[AwareDatetime, Field(title="End Date")]
     rendered_map_index: Annotated[str | None, Field(title="Rendered Map Index")] = None
+
+
+class VariableCollectionResponse(BaseModel):
+    """
+    Variable collection schema for list responses.
+    """
+
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    variables: Annotated[list[VariableResponse], Field(title="Variables")]
+    total_entries: Annotated[int, Field(title="Total Entries")]
 
 
 class AssetEventDagRunReference(BaseModel):

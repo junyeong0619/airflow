@@ -71,6 +71,7 @@ from airflow.sdk.execution_time.comms import (
     GetTaskStates,
     GetTICount,
     GetVariable,
+    GetVariables,
     GetXCom,
     MaskSecret,
     OKResponse,
@@ -87,6 +88,7 @@ from airflow.sdk.execution_time.comms import (
 from airflow.sdk.execution_time.request_handlers import (
     handle_get_connection,
     handle_get_variable,
+    handle_get_variables,
     handle_mask_secret,
 )
 from airflow.sdk.execution_time.supervisor import WatchedSubprocess, make_buffered_socket_reader
@@ -318,6 +320,7 @@ ToTriggerSupervisor = Annotated[
     | GetConnection
     | DeleteVariable
     | GetVariable
+    | GetVariables
     | PutVariable
     | DeleteXCom
     | GetXCom
@@ -494,6 +497,8 @@ class TriggerRunnerSupervisor(WatchedSubprocess):
             resp = self.client.variables.delete(msg.key)
         elif isinstance(msg, GetVariable):
             resp, dump_opts = handle_get_variable(self.client, msg)
+        elif isinstance(msg, GetVariables):
+            resp, dump_opts = handle_get_variables(self.client, msg)
         elif isinstance(msg, PutVariable):
             self.client.variables.set(msg.key, msg.value, msg.description)
         elif isinstance(msg, DeleteXCom):
